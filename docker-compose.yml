@@ -1,0 +1,87 @@
+version: '3.8'
+volumes:
+  mysql_data:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: rootPass
+      MYSQL_DATABASE: sql_db
+      MYSQL_USER: sqlUser
+      MYSQL_PASSWORD: sqlPass
+      MYSQL_INITDB_SKIP_TZINFO: 1
+      MYSQL_TABLE_DEFINITION_CACHE: 800
+      MYSQL_TABLE_OPEN_CACHE: 800
+      MYSQL_PERFORMANCE_SCHEMA_MAX_SQL_TEXT_LENGTH: 4096
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: >
+      --max_prepared_stmt_count=16382
+      --wait_timeout=28800
+      --interactive_timeout=28800
+
+      
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres1
+    environment:
+      POSTGRES_USER: pgUser
+      POSTGRES_PASSWORD: pgPass1
+      POSTGRES_DB: pg_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U devuser -d devdb" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:alpine
+    container_name: dev-redis
+    command: redis-server --requirepass redisPass
+    environment:
+      - REDIS_USER=default
+      - REDIS_PASSWORD=redisPass
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "redisPass", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitUser
+      - RABBITMQ_DEFAULT_PASS=rabbitPass
+      - RABBITMQ_DEFAULT_VHOST=my_vhost
+    ports:
+      - "5672:5672"    # AMQP protocol port
+      - "15672:15672"  # Management interface port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

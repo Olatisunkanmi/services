@@ -1,0 +1,2 @@
+user default on #redisPass ~* &* +@all
+user redisUser on #redisPass ~* &* +@all
