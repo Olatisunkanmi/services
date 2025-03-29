@@ -1,16 +1,17 @@
-version: '3.8'
 volumes:
   mysql_data:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  elasticsearch_data:
+  kibana_data:
 
 services:
   mysql:
     image: mysql:8
     container_name: mysql
     environment:
-      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_USER: rootp
       MYSQL_ROOT_PASSWORD: rootPass
       MYSQL_DATABASE: sql_db
       MYSQL_USER: sqlUser
@@ -29,11 +30,8 @@ services:
       timeout: 5s
       retries: 3
     command: >
-      --max_prepared_stmt_count=16382
-      --wait_timeout=28800
-      --interactive_timeout=28800
+      --max_prepared_stmt_count=16382 --wait_timeout=28800 --interactive_timeout=28800
 
-      
   postgres:
     image: postgres:15-alpine
     container_name: postgres1
@@ -76,12 +74,41 @@ services:
       - RABBITMQ_DEFAULT_PASS=rabbitPass
       - RABBITMQ_DEFAULT_VHOST=my_vhost
     ports:
-      - "5672:5672"    # AMQP protocol port
-      - "15672:15672"  # Management interface port
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      test: [ "CMD", "rabbitmq-diagnostics", "check_port_connectivity" ]
       interval: 30s
       timeout: 10s
       retries: 3
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false            # Security OFF
+      - xpack.security.transport.ssl.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false          # Security OFF
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
