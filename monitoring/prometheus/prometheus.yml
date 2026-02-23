@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  query_log_file: ./query.log
+  body_size_limit: 50MB
+
+  external_labels:
+    monitor: "codelab-monitor"
+
+scrape_configs:
+  - job_name: "prometheus"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "prompty"
+    static_configs:
+      - targets: ["localhost:7272"]
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          group: "local"
