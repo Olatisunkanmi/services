@@ -1,0 +1,77 @@
+xydockalias dri="cd ~/xl/rebucom/rebucom-driver-app && git pull origin dev && yarn install && yarn devD"
+alias adm="cd ~/xl/rebucom/dms-web-admin && git pull origin dev && yarn install && yarn start dev"
+alias f5="source ~/.zshrc"
+alias sys="colima start --runtime docker"
+alias mod_alias="nano ~/.oh-my-zsh/custom/aliases.zsh"
+fvim() {
+  local file
+  file=$(fzf) && [ -n "$file" ] && vim "$file"
+}
+fco() {
+  local branch
+  branch=$(git branch --all | sed 's/.* //; s#remotes/[^/]*/##' | sort -u | fzf) &&
+  git checkout "$branch"
+}
+fkill() {
+  local pid
+  pid=$(ps -ef | sed 1d | fzf | awk '{print $2}') && kill -9 "$pid"
+}
+
+#search history
+fhist() {
+  local cmd
+  if [ -n "$1" ]; then
+    cmd=$(history | grep "$1" | fzf)
+  else
+    cmd=$(history | fzf)
+  fi
+
+  if [ -n "$cmd" ]; then
+    # strip history number at start
+    cmd=$(echo "$cmd" | sed 's/^[ ]*[0-9]\+[ ]*//')
+    print -s "$cmd"
+    eval "$cmd"
+  fi
+}
+
+
+# Search for a file with preview (requires bat)
+fsearch() {
+  local file
+  file=$(rg --files | fzf --preview 'bat --style=numbers --color=always {} | head -100') &&
+  echo "$file"
+}
+fcd() {
+  local dir
+  dir=$(find . -type d 2>/dev/null | fzf) && cd "$dir"
+}
+
+# Git commit browser
+fcommit() {
+  local commit
+  commit=$(git log --oneline --decorate | fzf) &&
+  git show $(echo "$commit" | awk '{print $1}')
+}
+
+#listen for a port
+fport() {
+  if [ -z "$1" ]; then
+    echo "Usage: fport <port>"
+    return 1
+  fi
+  lsof -i :$1
+}
+#listen for all ports
+fports() {
+  local line
+  line=$(lsof -nP -iTCP -sTCP:LISTEN | fzf) || return
+  echo "$line"
+}
+alias Cserv="code ~/scripts/services/docker-compose.yml"
+alias k-sw="cd ~/scripts/services && docker-compose down -v"
+alias Rserv="cd ~/scripts/services && docker-compose up --build --force-recreate --no-deps -d"
+alias u-sw="cd ~/scripts/services && docker-compose down && docker-compose up -d"
+alias ow="cd ~/xl/octosoft/octocare-web && git pull origin develop && yarn install && nvm use 22 && yarn start"
+alias rdm="cd ~/xl/rebucom/dms-merchant-portal && git pull origin dev && yarn install && yarn dev"
+alias k-m="docker stop prometheus && docker stop kibana && docker stop elasticsearch && docker stop logstash"
+alias w-m="docker start prometheus && docker start kibana && docker start elasticsearch && docker start logstash"
